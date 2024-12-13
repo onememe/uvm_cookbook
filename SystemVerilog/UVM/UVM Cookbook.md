@@ -134,4 +134,55 @@ class my_item #(int ADD_WIDTH=20, int DATA_WIDTH=20)
 
 ### Factory Coding Convention 2: Constructor Defaults
 
-Конструкторы компонент и объектов - виртуальные методы с прототипом шаблона, которого должны придерживаться пользователи. 
+Конструкторы компонент и объектов - виртуальные методы с прототипом шаблона, которого должны придерживаться пользователи. Для того, чтобы поддерживать отложенное конструирование во время `build` фазы, конструктор фабрики должен содержать значения по умолчанию для аргументов конструктора. Это позволяет зарегистрированном в фабрике классу быть включеным в фабрику с использованием значений по умолчанию и тогда свойства класса могут быть переопределены аргументами, переданными через метод `create` класса оберкти `uvm_component_registry`. Значения по умолчанию различны для компонентов и для объектов:
+
+```systemverilog
+// for a component:
+class my_component extends uvm_component;
+	function new(string name = "my_component", uvm_component parent = null);
+		super.new(name, parent);
+	endfunction
+
+// for an object
+class my_item extends uvm_sequence_item;
+	function new(string name = "my_item");
+		super.new(name);
+	endfunction
+```
+
+### Factory Coding Convention 3: Component and Object Creation
+
+Компоненты тестового окружения создаются во время `build` фазы, используя метод `create`, принадлежащий `uvm_component_registry`. Он сначала конструирует класс, затем присваивается дескриптор класса его дескриптору в тестовом окружении, после правильного указания аргументов имени и родителя. Для компонентов процесс сборки происходит сверху вниз, что позволяет компонентам более высокого уровня конфигурировать и управлять сборкой.
+
+Объекты класса создаются по мере необходимости, используя тот же `create` метод. Следующий пример кода иллюстрирует как это сделано:
+
+```systemverilog
+class env extends uvm_env;
+	my_component m_my_component;
+	my_param_component #(.ADDR_WIDTH(32), .DATA_WIDTH(32))
+		m_my_p_component;
+
+	// constructor & registration left out
+	// component and parameterized component create examples
+	function void build_phase(uvm_phase phase);
+		m_my_component = my_component::type_id::create(
+			"m_my_component", this);
+		m_my_p_component = my_param_component #(32, 32)::type_id::create(
+			"m_my_p_component", this);
+	endfunction: build
+
+	task run_phase(uvm_phase phase);
+		my_seq test_seq;
+		my_param_seq #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) p_test_seq;
+
+		// object and parameterized object create examples
+		test_seq = my_seq::type_id::create("test_seq");
+		p_test_seq = my_param_seq #(32, 32)::type_id::create(
+			"p_test_seq", this);
+		// ...
+	endtask: run_phase
+```
+
+## Phasing
+
+### The Standard UVM Phases
