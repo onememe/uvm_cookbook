@@ -112,7 +112,7 @@ key2: "value2"
 
 #### The first line: `CAPI=2`
 
-Файл ядра всегда начинается строкой `CAPI=2`. Что-либо другое (включая комментарии) перед этой строкой недопустимо, т.к. Fusesoc использует первую строку, чтобы различать различные версии CAPI.
+Файл ядра всегда начинается строкой `CAPI=2`. Что-либо другое (включая комментарии) перед этой строкой недопустимо, т.к. Fusesoc использует первую строку, чтобы различать версии CAPI.
 
 #### The core name, version, and description
 
@@ -156,12 +156,12 @@ filesets:
 
 Наиболее часто встречаются атрибуты:
 
-- `is_include_file`: Файл - включаемый файл. Это означает, что файл не передается тулу напрямую, а вместо этого он включается(`include`) в другой исходный файл. Fusesoc гарантирует, что инструмент найдет включаемый файл, например, передавая в tool соответствующий путь.
+- `is_include_file`: Файл - включаемый файл. Это означает, что файл не передается в инструмент напрямую, а вместо этого он включается (`include`) в другой исходный файл. Fusesoc гарантирует, что инструмент найдет включаемый файл, например, передавая в tool соответствующий путь.
 - `file_type`: перезаписывает тип данных, заданный по умолчанию у набора, на другой, для конкретного файла
 
 #### File types
 
-Описывает тип исходного файла. Fusesoc не использует эту информацию, но передает ее в backend тула, который затем конфигурируется в соответствии от обнаруженного типа.
+Описывает тип исходного файла. Fusesoc не использует эту информацию, но передает ее в backend инструмента, который затем конфигурируется в соответствии от обнаруженного типа.
 
 Чаще всего используются типы файлов:
 
@@ -170,3 +170,49 @@ filesets:
 - `vhdlSource`: VHDL код
 
 #### Targets
+
+Мишень может рассматриваться как что-то, что вы бы хотели сделать с исходом кодом в ядре: синтезировать, смоделировать... Цели специфицируются как словари под ключом верхнего уровня `targets`.
+
+```YAML
+targets: 
+  # the default target used in dependencies.
+  # &default is an anchor
+  default: &default
+	filesets:
+	  - rtl
+	toplevel: blinky
+	parameters:
+	  - clk_freq_hz
+
+	# the sim target simulates the design
+	sim:
+	  # copy all pairs from the default target
+	  <<: *default
+	  description: "Simulate the design"
+	  default_tool: icarus
+	  filesets_append:
+	    - tb
+	  toplevel: blinky_tb
+	  tools:
+	    icarus:
+	      iverilog_options:
+	        - -g2012
+	    modelsim:
+		  vlog_options:
+		    - -timescale=1ns/1ns
+		parameters:
+		  - pulses=10
+
+  synth:
+	<<: *default
+	description: "Synthesize the design for a nexys video..."
+	default_tool: vivado
+	filesets_append:
+	  - nexys_video
+	tools:
+	  vivado:
+	    part: ...
+	parameters:
+	  - clk_freq_hz=100000000
+```
+
