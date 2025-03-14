@@ -496,7 +496,7 @@ $(UVM_HOME)/src/uvm_pkg.sv
 
 ##### **Register Fields**
 
-Нижний слой поля, соответствующий одному или более битам внутри регистра. Каждое поле - создание экземпляра класса `uvm_reg_field`. Поля содержатся внутри класса `uvm_reg` и они конструируются и конфигурируются методом `configure()`:
+Слой низшего уровня - поле, соответствует одному или более битам внутри регистра. Каждое определение поле - создание экземпляра класса `uvm_reg_field`. Поля содержатся внутри класса `uvm_reg` и они конструируются и конфигурируются методом `configure()`:
 
 ```SystemVerilog
 // uvm_field configure method prototype
@@ -516,9 +516,9 @@ fonction void configure(
 Метод конфигурирования используется как показано в примере регистра.
 Когда поле создается, имя берется из переданной в метод `create` строки, которое по умолчанию такое же, как и дескриптор объекта.
 
-**Registers**
+##### **Registers**
 
-Регистры моделируются расширением класса `uvm_reg` , с наполнением его объектами `field`. В целом, характеристики регистра определяются его конструктором:
+Регистры моделируются расширением класса `uvm_reg` , с наполнением его объектами `field`. Общие характеристики регистра определяются его конструктором:
 
 ```SystemVerilog
 // uvm_reg constructor prototype:
@@ -529,7 +529,7 @@ function new (
 );
 ```
 
-Класс `register` содержит `build` метод, используемый для создания и конфигурации полей. Следует отметить, что этот метод не вызывается в UVM build фазе, поскольку регистр - это `uvm_object`, а не компонента
+Класс `register` содержит `build` метод, используемый для создания и конфигурации полей. Следует отметить, что этот метод не вызывается в UVM build фазе, поскольку регистр - это `uvm_object`, а не компонента.
 
 В следующем примере кода показано, как создается модель регистра CTRL в SPI master.
 
@@ -543,23 +543,24 @@ class ctrl extends uvm_reg;
 	rand uvm_reg_field tx_neg;
 	rand uvm_reg_field rx_neg;
 	rand uvm_reg_field go_bsy;
-	uvm_reg_field reserved;
+	uvm_reg_field ;
 	rand uvm_reg_field char_len;
 	
 	function new(string name = "ctrl");
 		super.new(name, 14, UVM_NO_COVERAGE);
-		
 	endfunction
 
 	virtual function void build();
 		acs = uvm_reg_field::type_id::create("acs");
 		ie = uvm_reg_field::type_id::create("ie");
 		...
+		reserved = uvm_reg_field::type_id::create("reserved");
 		char_len = uvm_reg_field::type_id::create("char_len");
 
 		acs.configure(this, 1, 13, "RW", 0, 1'b0, 1, 1, 0);
 		ie.configure(this, 1, 11, "RW", 0, 1'b0, 1, 1, 0);
 		...
+		reserved.configure(this, 1, 7, "RO", 0, 1'b0, 1, 0, 0);
 		char_len.configure(this, 7, 0, "RW", 0, 7'b0000000, 1, 1, 0);
 		
 	endfunction
@@ -592,7 +593,7 @@ function new(string name,  // name of the mem model
 
 
 // memory array 1 - size 32'h2000;
-class mem_1_model extends uvm_mem;
+class mem_1_model extends uvm_mem;`
 	`uvm_object_utils(mem_1_model);
 
 	function new(string name = "mem_1_model");
@@ -1065,7 +1066,7 @@ class reg2apb_adapter extends uvm_reg_adapter;
 	endfunction: reg2bus
 
 	virtual function void bus2reg(uvm_sequence_item bus_item,
-								 ref uvm-reg_bus_op rw);
+								 ref uvm_reg_bus_op rw);
 		 apb_seq_item apb;
 		 if (!$cast(apb, bus_item)) begin
 			 `uvm_fatal(...)
@@ -1512,17 +1513,17 @@ endclass
 
 Здесь кратко описаны различные методы используемые для управления созданием групп покрытия и их влияние:
 
-| Method                                            | Description                                                                                                                                        |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Overall Control**                               |                                                                                                                                                    |
-| `uvm_reg::inclode_coverage(uvm_coverage_model_e)` | Статический метод, устанавливающий ресурс под ключом "include_coverage". Используется для управления собираемых регистровой моделью типов покрытия |
-| **Build Control**                                 |                                                                                                                                                    |
-| `build_coverage(uvm_coverage_model_e)`            | Используется для установки локальной переменной `m_has_cover` в значение, которое хранится в базе данных ресурсов по ключу "include_coverage"      |
-| `has_coverage(uvm_coverage_model_e)`              | Возвращает true если тип покрытия включен в поле `m_has_cover`                                                                                     |
-| `add_coverage(uvm_coverage_model_e)`              | Позволяет типам покрытия, переданным как аргумент, быть добавленными в поле `m_has_cover`                                                          |
-| **Sample Control**                                |                                                                                                                                                    |
-| `set_coverage(uvm_coverage_model_e)`              | Включает сбор покрытия для типа покрытия, сбор не включен по умолчанию                                                                             |
-| `get_coverage(uvm_coverage_model_e)`              | Возвращает true если сбор данного типа покрытия включен                                                                                            |
+| Method                                            | Description                                                                                                                                                           |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Overall Control**                               |                                                                                                                                                                       |
+| `uvm_reg::include_coverage(uvm_coverage_model_e)` | Статический метод, устанавливающий ресурс под ключом "include_coverage". Используется для управления собираемых регистровой моделью типов покрытия                    |
+| **Build Control**                                 |                                                                                                                                                                       |
+| `build_coverage(uvm_coverage_model_e)`            | Используется в конструкторе регистра для установки локальной переменной `m_has_cover` в значение, которое хранится в базе данных ресурсов по ключу "include_coverage" |
+| `has_coverage(uvm_coverage_model_e)`              | Возвращает `true` если переданный тип покрытия включен в поле `m_has_cover`                                                                                           |
+| `add_coverage(uvm_coverage_model_e)`              | Позволяет добавить переданный аргументом тип покрытия в поле `m_has_cover`                                                                                            |
+| **Sample Control**                                |                                                                                                                                                                       |
+| `set_coverage(uvm_coverage_model_e)`              | Включает сбор покрытия для переданного типа покрытия (по умолчанию не включен)                                                                                        |
+| `get_coverage(uvm_coverage_model_e)`              | Возвращает `true` если сбор покрытия переданного типа включен                                                                                                         |
 **Обратите внимание: невозможно установить включение покрытия поля до тех пор пока соответственно не будет установлено поле создания сбора покрытия (?)**
 
 Значения перечисления `uvm_coverage_model_e`:
@@ -1539,6 +1540,7 @@ endclass
 Следующий пример взят из реализации регистровой модели, включающей в себя функциональное покрытие.
 
 В тесте должно быть включено покрытие модели регистра в целом для всего тестового окружения при помощи статического метода `uvm_reg::include_coverage()`:
+
 ```systemverilog
 //
 // Inside the test build method:
@@ -1550,6 +1552,7 @@ function void spi_test_base::build();
 ```
 
 Первый отрывок кода - для групп покрытия, предназначенных для использования на блочном уровне для получения покрытия доступа чтения и записи блока регистра. Группа покрытия была обернута в класс, включенный в пакет регистровой модели, так с ней проще работать.
+
 ```systemverilog
 //
 // A covergroup (wrapped in a class) that is designed to get the
@@ -1572,7 +1575,7 @@ class SPI_APB_reg_access_wrapper extends uvm_object;
 		
 		// To be generated:
 		//
-		// Generic from for bins is:
+		// Generic form for bins is:
 		//
 		// bins reg_name = {reg_addr};
 		ADDR: coverpoint addr {
@@ -1613,6 +1616,7 @@ endclass: SPI_APB_reg_access_wrapper
 В методе `build()` блоков, метод `has_coverage()` используется для проверки включена ли модель покрытия, используемая в запрашиваемом блоке покрытия. Если это так, запрашиваемая группа покрытия собирается, а затем сбор покрытия для этой модели покрытия устанавливается, с помощью метода `set_coverage()`.
 
 В методе `sample()` используется метод `get_coverage()` для проверки разрешен ли сбор покрытия данной модели, и только в том случае покрытие собирается для данной группы, передавая аргументы `address` и `is_read`.
+
 ```systemverilog
 //
 // The relevant parts of the spi_rm register block:
@@ -1661,7 +1665,7 @@ class spi_reg_block extends uvm_reg_block;
 		// 
 		// Create, build and configure the registers ...
 		//
-
+		
 		APB_map = create_map("APB_map", 'h0, 4, UVM_LITTLE_ENDIAN);
 		APB_map.add_reg(rxtx0_reg, 32'h00000000, "RW");
 		APB_map.add_reg(rxtx1_reg, 32'h00000004, "RW");
@@ -1974,3 +1978,192 @@ spi_rm.mirror(status, .path(UVM_BACKDOOR));
 
 ## Register Sequence Examples
 
+
+## Register-Level Functional Coverage
+
+### Register Based Functional Coverage Overview
+
+UVM поддерживает три способа сбора функционального покрытия, основанных на состоянии регистра:
+- Автоматический сбор покрытия регистра при каждом доступе, основанный на группах покрытия внутри регистровой модели
+- Управляемый сбор покрытия регистра, основанный на группах покрытия внутри модели регистра, с помощью вызова метода снаружи модели
+- По ссылки из внешней группы покрытия, которая сэмплирует значение регистра через указатель регистровой модели
+
+Большинство генераторов регистровой модели позволяют пользователям специфицировать автоматическую генерацию групп, основанную на бите поля или содержимом регистра. Ничего, если у вас узкий бит поля и вы интересуетесь всеми состояниями, которые поле может принять, но они быстро теряют смысл и просто перегружают симуляцию при минимальной отдаче. Для того, чтобы собрать значимое функциональное покрытие регистра, нужно определить покрытие в терминах пересечений значений (`cross`) нескольких регистров и, возможно, нерегистровых сигналов и/или переменных. Ваша генерация регистровой модели может помочь поддержать этот уровень сложности, но, если нет, довольно просто реализовать внешний компонент сбора функционального покрытия, ссылающегося на регистровую модель.
+
+Рекомендуемый подход - использовать внешние группы покрытия, которые сэмплируют значения регистров через указатель регистровой модели.
+
+### Controlling Register Model Functional Coverage Collection
+
+Регистровая модель может содержать множество групп покрытия, что может потенциально оказать серьезное влияние на производительность симуляции. Поэтому есть различные внутренние блокировки, встроенные в регистровую модель, позволяющие вам определять какой тип модели покрытия вы хотите использовать, а также включать или выключать сбор покрытия во время выполнения тестового сценария. Перечисляемый тип с побитовым отображением используется чтобы включать различные модели покрытия, доступные значения перечисления:
+
+| enum value           | Coverage Enabled                                                      |
+| -------------------- | --------------------------------------------------------------------- |
+| `UVM_NO_COVERAGE`    | Все покрытия выключены                                                |
+| `UVM_CVR_REG_BITS`   | Сбор покрытие для битов, записанных или считанных из регистров        |
+| `UVM_CVR_ADDR_MAP`   | Сбор покрытия для записываемых или считываемых адресов адресной карты |
+| `UVM_CVR_FIELD_VALS` | Сбор покрытия для значений, хранимых в полях регистров                |
+| `UVM_CVR_ALL`        | Сбор всех покрытий                                                    |
+Перечисление с битовым отображением позволяет включить несколько моделей покрытия одним присваиванием логического ИЛИ нескольких разных значений, например `set_coverage(UVM_CVR_ADDR_MAP + UVM_CVR_FIELD_VALS)`
+
+Модель регистра может содержать группы покрытия, которые были назначены каждой из активных категорий, а в целом покрытие модели регистра устанавливается статическим методом класса `uvm_reg` - `include_coverage()`. Этот метод должен быть вызван до того, как собрана модель регистра, поскольку он создает входы в базу данных ресурсов, на которые ориентируется регистровая модель при выполнении своего метода `build()`, чтобы определить какие группы покрытий должны быть созданы.
+```systemverilog
+//
+// From the SPI test base
+//
+// Build the env, create the env configuration
+// including any sub configurations and assigning virtual interfaces
+function void spi_text_base::build_phase(uvm_phase build);
+	// env configuration
+	m_env_cfg = spi_env_config::type_id::create("m_env_cfg");
+	// Register model
+	// Enable all types of coverage available in the register model
+	uvm_reg::include_coverage("*", UVM_CVR_ALL);
+	// Create the register mdoel:
+	spi_rm = spi_reg_block::type_id::create("spi_rm");
+	// Build and configure the register model
+	spi_rm.build();
+```
+
+По мере построения модели регистра включается сбор покрытия для различных категорий, которые были включены. Сбор покрытия для категории групп внутри иерархического объекта регистровой модели может управляться методом `set_coverage()` в конъюнкции с методами `has_coverage()` и `get_coverage()`.
+
+### Register Model Coverage Sampling
+
+Группы покрытия внутри регистровой модели в большинстве случаев будут определены моделью спецификации и процессом генерации и конечный пользователь может не знать как они реализованы. Группы покрытия внутри регистровой модели могут сэмплироваться одним из двух способов.
+
+Некоторые группы покрытия в регистровой модели сэмплируюстя как побочный эффект доступа к регистру, т. е. автоматически. Для каждого доступа к регистру происходит автоматический сбор покрытия в регистре и в блоке, который его содержит. Этот тип покрытия важен для получения данных покрытия статистики доступа к регистру и информации, которая может быть связана с доступом к конкретному регистру.
+
+Другие группы покрытия регистровой модели сэмплируются только когда тестовое окружение вызывает метод `sample_values()` из компонента или сиквенса где-либо в тестбенче. Это позволяет собирать более специализированное покрытие. Потенциальные области применения:
+- Сэмплирование состояния регистра (конфигурации ТУ), когда происходит специфичное событие, как, например, прерывание
+- Сэмплирование состояния регистра при записи определенного регистра
+
+### Referencing The Register Model Data In External Functional Coverage Monitors (Recommended)
+
+Альтернативный способ реализации функционального покрытия, основанного на регистрах - создать компонент монитор для функционального покрытия отдельно от регистровой модели, но сэмплировать значения внутри регистровой модели. Преимущества такого подхода:
+- Группы покрытия внутри внешнего монитора могут быть разработаны отдельно от реализации регистровой модели
+- Сэмплирование групп покрытия может легче управляться 
+- Возможно смешивать, пересекать сэмплированные значения регистровой модели с сэмплированными значениями других переменных тестового окружения
+
+Следующий пример показывает монитор функционального покрытия из тестового окружения SPI, который ссылается на регистровую модель SPI
+```systemverilog
+class spi_reg_functional_coverage extends uvm_subscriber #(apb_seq_item);
+	`uvm_component_utils(spi_reg_functional_coverage)
+
+	logic[4:0] address;
+	bit wnr;
+	spi_reg_block spi_rm;
+
+	// Checks that the SPI master registers have
+	// all been accessed for both reads and writes
+	covergroup reg_rw_cov;
+		option.per_instance = 1;
+		ADDR: coverpoint address {
+			bins DATA0 = {0};
+			bins DATA1 = {4};
+			bins DATA2 = {8};
+			bins CTRL = {5'h10};
+			bins DIVIDER = {5'h14};
+			bins SS = {5'h18};
+		}
+		CMD: coverpoint wnr {
+			bins RD = {0};
+			bins WR = {1};
+		}
+		RW_CROSS: cross CMD, ADDR;
+	endgroup: reg_rw_cov
+
+	//
+	// Checks that we have tested all possible modes of operation
+	// for the SPI master
+	//
+	// Note that the field value is 64 bits wide, so only the relevant
+	// bits are used
+	covergroup combination_cov;
+		option.per_instance = 1;
+		ACS: coverpoint spi_rm.ctrl_reg.acs.value[0];
+		IE: coverpoint smi_rm.ctrl_reg.ie.value[0];
+		LSB: coverpoint spi_rm.ctrl_reg.lsb.value[0];
+		TX_NEG: coverpoint spi_rm.ctrl_reg.tx_neg.value[0];
+		RX_NEG: coverpoint spi_rm.ctrl_reg.rx_neg.value[0];
+		// Suspect character length - there may be more
+		CHAR_LEN: coverpoint spi_rm.ctrl_reg.char_len.value[6:0] {
+			bins LENGTH[] = {0, 1, [31:33], [63:65], [95:97], 126, 127};
+		}
+		CLK_DIV: coverpoint spi_rm.divider_reg.ratio.value[7:0] {
+			bins RATIO[] = {16'h0, 16'h1, 16'h2, 16'h4, 16'h8, 
+							16'h10, 16'h20, 16'h40, 16'h80};
+		}
+		COMB_CROSS: cross ACS, IE, LSB, TX_NEG, RX_NEG, CHAR_LEN, CLK_DIV;
+	endgroup: combination_cov
+
+	extern function new(strin name = "spi_reg_functional_coverage",
+						uvm_component_parent = null);
+	extern function void write(T t);
+
+endclass: spi_reg_functional_coverage
+
+function spi_reg_funcional_coverage::new(string name = "spi_reg_funcional_coverage",
+										uvm_component_parent = null);
+	super.new(name, parent);
+	reg_rw_cov = new();
+	combination_cov = new();
+endfunction: new
+
+function void spi_reg_funcional_coverage::write(T t);
+	// Register coverage first
+	address = t.addr[4:0];
+	wnr = t.we;
+	reg_rw_cov.sample();
+	// Sample the combination covergroup when go_bsy is true
+	if (address == 5'h10) begin
+		if (wnr) begin
+			if (t.data[8] == 1) begin
+				combination_cov.sample();  // TX started
+			end
+		end
+	end
+endfunction: write
+```
+
+### Coding Guideline: Wrap covergroups within uvm_objects
+
+Группу покрытия стоит реализовывать внутри класса-обёртки, унаследованного от `uvm_object`.
+
+**Обоснование**:
+
+У обёртывания группы покрытия таким способом следующие преимущества:
+- `uvm_object` может быть сконструирован в любое время - так и группа покрытия может создана в любое время, что поддерживает условное отложенное конструирование.
+- Класс-обёртка группы покрытия может быть переписан из фабрики, что позволяет заместить группу покрытия на альтернативную, если потребуется.
+- Это преимущество может стать более актуальным при использовании различных активных фаз в будущем.
+
+**Example:**
+
+```systemverilog
+class covergroup_wrapper extends uvm_object;
+	`uvm_object_utils(covergroup_wrapper)
+
+	covergroup cg(string name) with function sample(my_reg reg, bin is_read);
+		option.name = name;
+		CHAR_LEN: coverpoint reg.char_len {
+			bins len_5 = {2'b00};
+			bins len_6 = {2'b01};
+			bins len_7 = {2'b10};
+			bins len_8 = {2'b11};
+		}
+		PARITY: coverpoint reg.parity {
+			bins parity_on = {1'b1};
+			bins parity_off = {1'b0};
+		}
+		ALL_OPTIONS: cross CHAR_LEN, PARITY;
+	endgroup: cg
+
+	function new(string name = "covergroup_wrapper");
+		super.new(name);
+		cg = new();
+	endfunction
+
+	function voud sample(my_reg reg_in, bit is_read_in);
+		cg.sample(reg_in, is_read_in);
+	endfunction: sample
+
+endclass: covergroup_wrapper
+```
