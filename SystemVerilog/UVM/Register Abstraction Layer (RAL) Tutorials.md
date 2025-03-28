@@ -1973,8 +1973,66 @@ spi_rm.mirror(status, .path(UVM_BACKDOOR));
 
 ## Memory-Level Stimulus
 
-...
+### Memory Model Overview
 
+Модель регистра UVM также поддерживает доступ к памяти. Области памяти внутри ТУ представляются моделями памяти, у которых есть настроенная ширина а диапазон и которые размещены по сдвигу, определенному в регистровой карте. Модель памяти определена одним из режимов доступа read-write, read-only или write-only.
+
+В отличие от регистровой модели, модели памяти не хранят состояние, а просто предоставляют уровень доступа к памяти. Причина тому то, что хранение содержимого памяти привело бы к серьезным накладным расходам при симуляции, и то, что области аппаратной памяти ТУ уже реализованы с использованием моделей, которые предлагают альтернативные способы верификации. Модель памяти поддерживает и front door и back door доступы.
+
+### Memory Model Access Methods
+
+Модель памяти поддерживает 4 типа методов доступа:
+- `read`
+- `write`
+- `burst_read`
+- `burst_write`
+
+#### Memory read
+
+Метод `read()` используется для чтения из ячейки памяти, адрес ячейки - сдвиг внутри области памяти, а не абсолютный адрес памяти. Это позволяет перемещать стимулы, обращаемые к памяти, а следовательно переиспользовать их.
+
+```systemverilog
+//
+// memory read method prototype
+//
+task uvm_mem::read(output uvm_status_e status,  // outcome of the write cycle
+				   input uvm_reg_addr_t offset,  // offset address within the mem
+				   output uvm_reg_data_t value,  // read data
+				   input uvm_door_e path = UVM_DEFAULT_DOOR,  // front or backdoor
+															 // access
+				   input uvm_reg_map map = null,  // which map
+				   input uvm_sequence_base parent = null,  // parent sequence
+				   input int prior = -1,  // priority on the target sequencer
+				   input uvm_object extension = null,  // object allowing method
+				   input string fname = "",  // filename for messaging
+				   input int lineno = 0);  // file line number for messaging
+
+// 
+// examples:
+//
+mem_ss.mem_1.read(status, 32'h1000, read_data, .parent(this));  // default map
+mem_ss.mem_1.read(status, 32'h2000, read_data, .parent(this), .map(AHB_2_map));
+```
+
+#### Memory write
+
+Метод `write()` используется для записи в ячейку памяти, и так же как и метод `read()` адрес записываемой ячейки - сдвиг внутри области памяти.
+
+```systemverilog
+//
+// memory write method prototype
+//
+task uvm_mem::write(output uvm_status_e status,
+					input uvm_reg_addr_t offset,
+					input uvm_reg_data_t value,
+					input uvm_door_e path = UVM_DEFAULT_DOOR,
+					input uvm_reg_map map = null,
+					input uvm_sequence_base parent = null,
+					input int prior = -1,
+					input uvm_object extension = null,
+					input string fname = "",
+					input int lineno = 0);
+```
 
 ## Register Sequence Examples
 
